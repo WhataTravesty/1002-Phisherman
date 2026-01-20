@@ -1,2 +1,9 @@
 # Ignore virtual environment
 venv/
+.venv/
+env/
+env
+
+# Ignore Datasets
+email-dataset-figshare/
+env
