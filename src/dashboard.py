@@ -42,9 +42,9 @@ def generate_mock_results(n=200):
 
 
 def build_dashboard_data():
-    """
-    Computes all statistics required by the dashboard template.
-    """
+    
+    #Computes all statistics required by the dashboard template
+
     df = generate_mock_results()
 
     total = len(df)
