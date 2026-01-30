@@ -1,9 +1,8 @@
 import re
-import csv
-from keywords_list import KEYWORDS
+from .keywords_list import KEYWORDS
 
-
-def position_multiplier(position: int, text_length: int) -> float:
+#Take in the position where the word was found and the length of the text
+def position_multiplier(position, text_length):
     ratio = position / text_length
 
     if ratio < 0.2:
@@ -14,29 +13,34 @@ def position_multiplier(position: int, text_length: int) -> float:
         return 1.0
     
 
-def analyze_email(email_body: str):
+def analyze_email(email_body):
+    #Convert the email to only lowercase to conduct regex search
     email_body = email_body.lower()
     length = len(email_body)
 
+    #Store all dictionaries in this list
     results = []
     total_score = 0.0
 
+    #Run a for loop to catch each word inside the email.
     for match in re.finditer(r"\b\w+\b", email_body):
         word = match.group()
         pos = match.start()
 
+        #Apply multiplier to its score based on its postition
         if word in KEYWORDS:
             rule = KEYWORDS[word]
             multiplier = position_multiplier(pos, length)
             score = rule.base_weight * multiplier
 
+            #Add the dictionary into the results list
             results.append({
                 "name":word,
                 "position": pos,
                 "score": score
             })
 
-
+            #Add to total score
             total_score += score
 
     #Appending the Total Score to the top of the data
@@ -48,25 +52,3 @@ def analyze_email(email_body: str):
     results.insert(0,total_score_dict)
         
     return results
-
-#Takes in a list and writes in string to a txt file
-def outputKeywordScoring(result):
-    fieldnames = result[0].keys()
-    with open("outputs/keyword_scoring.csv","w") as f:
-        writer = csv.DictWriter(f, fieldnames=fieldnames)
-        # Create a DictWriter object
-        writer = csv.DictWriter(f, fieldnames=fieldnames)
-
-        # Write the header row
-        writer.writeheader()
-
-        # Write the data rows
-        writer.writerows(result)
-
-def main():
-    email = "URGENT: Click here to verify your bank account password"
-    outputKeywordScoring(analyze_email(email))
-    return 0
-
-if __name__ == "__main__":
-    main()
