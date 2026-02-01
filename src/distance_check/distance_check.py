@@ -122,3 +122,5 @@ def enhanced_distance_check(sender_domain: str, legit_domains: set[str], max_dis
 print(enhanced_distance_check("python.org", LEGIT_DOMAINS, 2))
 print(enhanced_distance_check("pythonn.org", LEGIT_DOMAINS, 2))
 print(enhanced_distance_check("test.paypal.org", LEGIT_DOMAINS, 2))
+print(enhanced_distance_check("gmail.security.xyz", LEGIT_DOMAINS, 2))
+print(enhanced_distance_check("pythno.reference.com", LEGIT_DOMAINS, 2))
