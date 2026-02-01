@@ -1,0 +1,124 @@
+from legit_domains import LEGIT_DOMAINS
+import Levenshtein, tldextract
+
+SCORE_TYPO_DOMAIN = 25
+SCORE_SUBDOMAIN_IMPERSONATION = 30
+
+
+def normalize_domain_names(domain: str) -> str:
+    domain_name = str(domain).lower().strip()
+    if domain_name.startswith("www."):
+        domain_name = domain_name[4:]
+    if domain_name.endswith("."):
+        domain_name = domain_name[:-1]
+    return domain_name
+
+
+def split_domain(domain: str):
+    extract = tldextract.extract(domain)
+    if not extract.domain or not extract.suffix:
+        return domain, ""
+    registered_domain = f"{extract.domain}.{extract.suffix}"
+    sub_domain = extract.subdomain
+    return registered_domain, sub_domain
+
+
+LEGIT_NORMALIZED = {normalize_domain_names(x) for x in LEGIT_DOMAINS}
+
+# set process faster than list
+LEGIT_REGISTERED = set()
+LEGIT_BRANDS = set()
+
+for domain in LEGIT_DOMAINS:
+    domain_name = normalize_domain_names(domain)
+    registered, _sub = split_domain(domain_name)
+    LEGIT_REGISTERED.add(registered)
+
+    extract = tldextract.extract(domain_name)
+    if extract.domain:
+        LEGIT_BRANDS.add(extract.domain)
+
+
+def score_distance_result(status: str) -> int:
+    if status == "IMPERSONATION":
+        return SCORE_SUBDOMAIN_IMPERSONATION
+    if status == "SUSPICIOUS":
+        return SCORE_TYPO_DOMAIN
+    return 0
+
+
+def distance_check(sender_domain: str, legit_set: set[str], max_distance: int = 2):
+
+    sender_domain_name = normalize_domain_names(sender_domain)
+
+    best_match = None
+    best_distance = None
+
+    for legit in legit_set:
+        legit_domain_name = normalize_domain_names(legit)
+        dist = Levenshtein.distance(sender_domain_name, legit_domain_name)
+
+        if best_distance is None or dist < best_distance:
+            best_distance = dist
+            best_match = legit_domain_name
+            if best_distance == 0:
+                break
+
+    if best_distance is None or best_distance > max_distance:
+        return None, None
+
+    return best_match, best_distance
+
+
+def enhanced_distance_check(sender_domain: str, legit_domains: set[str], max_distance: int = 2):
+    sender_domain_name = normalize_domain_names(sender_domain)
+    registered, sub = split_domain(sender_domain_name)
+
+    # Registered domain exact legit?
+    if registered in LEGIT_REGISTERED:
+        status = "SAFE"
+        return status, score_distance_result(status), f"[SAFE] registered='{registered}' exact match"
+
+    # Registered domain close to a legit registered domain?
+    reg_match, reg_dist = distance_check(registered, LEGIT_REGISTERED, max_distance=max_distance)
+    if reg_dist is not None and 1 <= reg_dist <= max_distance:
+        status = "SUSPICIOUS"
+        return status, score_distance_result(status), (
+            f"[REGISTERED TYPO] '{registered}' ~ '{reg_match}' (dist={reg_dist})"
+        )
+
+    # Subdomain impersonation (only when registered is NOT legit)
+    if sub:
+        # tokenize: a.b-c -> ["a","b","c"]
+        tokens = []
+        for part in sub.split("."):
+            tokens.extend(part.split("-"))
+
+        for token in tokens:
+            token = token.strip()
+            if not token:
+                continue
+
+            #exact brand token in subdomain
+            if token in LEGIT_BRANDS:
+                status = "IMPERSONATION"
+                return status, score_distance_result(status), (
+                    f"[SUBDOMAIN BRAND] token '{token}' in '{sender_domain}' (registered='{registered}')"
+                )
+
+            # near brand typo in subdomain
+            tok_match, tok_dist = distance_check(token, LEGIT_BRANDS, max_distance=max_distance)
+            if tok_dist is not None and 1 <= tok_dist <= max_distance:
+                status = "IMPERSONATION"
+                return status, score_distance_result(status), (
+                    f"[SUBDOMAIN TYPO] '{token}' ~ '{tok_match}' (dist={tok_dist}) in '{sender_domain}'"
+                )
+
+    # Nothing suspicious
+    status = "UNKNOWN"
+    return status, score_distance_result(status), f"[PASS] registered='{registered}'"
+
+
+print(enhanced_distance_check("python.org", LEGIT_DOMAINS, 2))
+print(enhanced_distance_check("pythonn.org", LEGIT_DOMAINS, 2))
+print(enhanced_distance_check("test.paypal.org", LEGIT_DOMAINS, 2))
