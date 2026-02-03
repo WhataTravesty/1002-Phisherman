@@ -3,11 +3,36 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %} {% endblock %}</title>
+    <title>{% block title %}Phishing Detection{% endblock %}</title>
+
+    <!-- Tailwind CDN -->
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
 </head>
-<body>
-    {% block content %}
-    {% endblock %}
+<body class="bg-gray-100 text-gray-800">
+
+    <!-- ===== Navbar ===== -->
+    <nav class="bg-white border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex justify-between items-center">
+            <a href="/" class="text-lg font-semibold text-gray-900">
+                Phishing Detection
+            </a>
+
+            <div class="space-x-6">
+                <a href="/" class="text-gray-600 hover:text-gray-900">
+                    Home
+                </a>
+                <a href="/dashboard" class="text-gray-600 hover:text-gray-900">
+                    Dashboard
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- ===== Page Content ===== -->
+    <main class="max-w-7xl mx-auto px-4 py-6">
+        {% block content %}
+        {% endblock %}
+    </main>
+
 </body>
 </html>
