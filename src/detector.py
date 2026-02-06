@@ -1,27 +1,14 @@
-from flask import Flask, render_template, request, redirect, url_for
-import pandas as pd
-import os
+from flask import Flask, render_template, request
 from werkzeug.utils import secure_filename
-
-from src.dashboard import build_dashboard_data
+import os
+import pandas as pd
 
 app = Flask(__name__)
-app.config["MAX_CONTENT_LENGTH"] = 200 * 1024 * 1024  # 200MB upload limit
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-INPUT_FOLDER = os.path.join(BASE_DIR, "input")
-os.makedirs(INPUT_FOLDER, exist_ok=True)
-app.config["INPUT_FOLDER"] = INPUT_FOLDER
+app.config["INPUT_FOLDER"] = "./uploads"
 
 @app.route("/")
 def index():
     return render_template("index.html")
-
-
-@app.route("/dashboard")
-def dashboard():
-    data = build_dashboard_data()
-    return render_template("dashboard.html", **data)
-
 
 @app.route("/upload", methods=["POST"])
 def upload_dataset():
@@ -42,7 +29,7 @@ def upload_dataset():
         return render_template("results.html", error=f"Could not process CSV: {e}")
 
     # Remove raw columns for now
-    df = df.loc[:, [c for c in df.columns if not str(c).endswith("_raw")]]
+    df = df.loc[:, [c for c in df.columns if not c.endswith("_raw")]]
 
     return render_template(
         "results.html",
@@ -51,7 +38,3 @@ def upload_dataset():
         column_count=len(df.columns),
         columns=list(df.columns)
     )
-
-
-if __name__ == "__main__":
-    app.run(debug=True)
