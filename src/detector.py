@@ -1,84 +1,40 @@
-import re
+from flask import Flask, render_template, request
+from werkzeug.utils import secure_filename
+import os
+import pandas as pd
 
-SUSPICIOUS_KEYWORDS = ["urgent", "verify", "account", "password", "login", "suspended", "immediately"]
-IP_URL_PATTERN = re.compile(r"https?://\d{1,3}(\.\d{1,3}){3}(/|\b)")
+app = Flask(__name__)
+app.config["INPUT_FOLDER"] = "./uploads"
 
-def _safe_get(row, *candidates):
-    for c in candidates:
-        if c in row and isinstance(row[c], str):
-            return row[c]
-    return ""
+@app.route("/")
+def index():
+    return render_template("index.html")
 
-def scan_row(subject: str, body: str) -> tuple[int, list]:
-    reasons = []
-    score = 0
+@app.route("/upload", methods=["POST"])
+def upload_dataset():
+    file = request.files.get("dataset")
+    if not file or file.filename.strip() == "":
+        return render_template("results.html", error="No file uploaded.")
 
-    text = f"{subject}\n{body}".lower()
+    if not file.filename.lower().endswith(".csv"):
+        return render_template("results.html", error="Only .csv files are supported.")
 
-    # Keyword detection
-    hits = [k for k in SUSPICIOUS_KEYWORDS if k in text]
-    if hits:
-        score += 2
-        reasons.append(f"Suspicious keywords: {', '.join(sorted(set(hits)))} (+2)")
+    filename = secure_filename(file.filename)
+    input_path = os.path.join(app.config["INPUT_FOLDER"], filename)
 
-        # Position weighting (subject)
-        subj_hits = [k for k in SUSPICIOUS_KEYWORDS if k in subject.lower()]
-        if subj_hits:
-            score += 2
-            reasons.append("Keyword in subject (+2)")
+    try:
+        file.save(input_path)
+        df = pd.read_csv(input_path)
+    except Exception as e:
+        return render_template("results.html", error=f"Could not process CSV: {e}")
 
-        # Early body (first 200 chars)
-        early = body[:200].lower()
-        early_hits = [k for k in SUSPICIOUS_KEYWORDS if k in early]
-        if early_hits:
-            score += 1
-            reasons.append("Keyword early in body (+1)")
+    # Remove raw columns for now
+    df = df.loc[:, [c for c in df.columns if not c.endswith("_raw")]]
 
-    # URL checks
-    if "http://" in text or "https://" in text:
-        score += 1
-        reasons.append("Contains URL (+1)")
-
-    if IP_URL_PATTERN.search(text):
-        score += 3
-        reasons.append("IP-based URL detected (+3)")
-
-    return score, reasons
-
-
-def scan_dataframe_for_phishing(df):
-    # Standardize expected columns if missing
-    df = df.copy()
-
-    # Ensure columns exist (if not, create empty)
-    for col in ["from", "subject", "body"]:
-        if col not in df.columns:
-            df[col] = ""
-
-    risk_scores = []
-    predicted = []
-    reasons_all = []
-
-    for _, row in df.iterrows():
-        subject = str(row.get("subject", ""))
-        body = str(row.get("body", ""))
-
-        score, reasons = scan_row(subject, body)
-        label = "phishing" if score >= 4 else "ham"  # demo threshold
-
-        risk_scores.append(score)
-        predicted.append(label)
-        reasons_all.append("; ".join(reasons) if reasons else "No suspicious signals")
-
-    df["risk_score"] = risk_scores
-    df["predicted"] = predicted
-    df["reasons"] = reasons_all
-
-    summary = {
-        "total": len(df),
-        "phishing": sum(1 for x in predicted if x == "phishing"),
-        "ham": sum(1 for x in predicted if x == "ham"),
-        "threshold": 4,
-    }
-
-    return df, summary
+    return render_template(
+        "results.html",
+        input_file=filename,
+        row_count=len(df),
+        column_count=len(df.columns),
+        columns=list(df.columns)
+    )
