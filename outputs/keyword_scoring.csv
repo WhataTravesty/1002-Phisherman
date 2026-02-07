@@ -1,7 +1,2 @@
-name,position,score
-TOTAL_SCORE,nil,13.9
-urgent,0,3.0
-click,8,1.5
-verify,22,2.4
-bank,34,4.0
-password,47,3.0
+,email,Keyword Score,Keyword Boolean
+0,URGENT: Click here to verify your bank account password,0.442,True

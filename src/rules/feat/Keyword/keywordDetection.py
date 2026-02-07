@@ -12,6 +12,12 @@ def position_multiplier(position, text_length):
     else:
         return 1.0
     
+def boolean_result(normalized_keyword_score):
+    if normalized_keyword_score > 0.3:
+        return True
+    else:
+        return False
+    
 
 def analyze_email(email_body):
     #Convert the email to only lowercase to conduct regex search
@@ -42,13 +48,8 @@ def analyze_email(email_body):
 
             #Add to total score
             total_score += score
+    
+    normalized_keyword_score = min(total_score / 50, 1.0)
 
     #Appending the Total Score to the top of the data
-    total_score_dict = {
-        "name": "TOTAL_SCORE",
-        "position": "nil",
-        "score": round(total_score,2)
-    }
-    results.insert(0,total_score_dict)
-        
-    return results
+    return normalized_keyword_score

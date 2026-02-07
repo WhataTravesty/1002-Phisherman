@@ -1,2 +1,2 @@
-from .keywordDetection import analyze_email
+from .keywordDetection import analyze_email, boolean_result
 

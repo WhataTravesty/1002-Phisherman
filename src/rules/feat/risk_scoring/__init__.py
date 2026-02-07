@@ -1,1 +1,1 @@
-from .individualRiskScoring import outputScoring
+from .individualRiskScoring import append_results_to_dataframe
