@@ -1,8 +1,10 @@
-from legit_domains import LEGIT_DOMAINS
+from legit_domains_generated import LEGIT_DOMAINS
 import Levenshtein, tldextract
 
-SCORE_TYPO_DOMAIN = 25
-SCORE_SUBDOMAIN_IMPERSONATION = 30
+SCORE_TYPO_DOMAIN = 20
+SCORE_SUBDOMAIN_IMPERSONATION = 25
+
+
 
 
 def normalize_domain_names(domain: str) -> str:
@@ -23,7 +25,7 @@ def split_domain(domain: str):
     return registered_domain, sub_domain
 
 
-LEGIT_NORMALIZED = {normalize_domain_names(x) for x in LEGIT_DOMAINS}
+# LEGIT_NORMALIZED = {normalize_domain_names(x) for x in LEGIT_DOMAINS}
 
 # set process faster than list
 LEGIT_REGISTERED = set()
@@ -77,13 +79,13 @@ def enhanced_distance_check(sender_domain: str, legit_domains: set[str], max_dis
     # Registered domain exact legit?
     if registered in LEGIT_REGISTERED:
         status = "SAFE"
-        return status, score_distance_result(status), f"[SAFE] registered='{registered}' exact match"
+        return True, score_distance_result(status), f"[SAFE] registered='{registered}' exact match"
 
     # Registered domain close to a legit registered domain?
     reg_match, reg_dist = distance_check(registered, LEGIT_REGISTERED, max_distance=max_distance)
     if reg_dist is not None and 1 <= reg_dist <= max_distance:
         status = "SUSPICIOUS"
-        return status, score_distance_result(status), (
+        return False, score_distance_result(status), (
             f"[REGISTERED TYPO] '{registered}' ~ '{reg_match}' (dist={reg_dist})"
         )
 
@@ -102,7 +104,7 @@ def enhanced_distance_check(sender_domain: str, legit_domains: set[str], max_dis
             #exact brand token in subdomain
             if token in LEGIT_BRANDS:
                 status = "IMPERSONATION"
-                return status, score_distance_result(status), (
+                return False, score_distance_result(status), (
                     f"[SUBDOMAIN BRAND] token '{token}' in '{sender_domain}' (registered='{registered}')"
                 )
 
@@ -110,13 +112,13 @@ def enhanced_distance_check(sender_domain: str, legit_domains: set[str], max_dis
             tok_match, tok_dist = distance_check(token, LEGIT_BRANDS, max_distance=max_distance)
             if tok_dist is not None and 1 <= tok_dist <= max_distance:
                 status = "IMPERSONATION"
-                return status, score_distance_result(status), (
+                return False, score_distance_result(status), (
                     f"[SUBDOMAIN TYPO] '{token}' ~ '{tok_match}' (dist={tok_dist}) in '{sender_domain}'"
                 )
 
     # Nothing suspicious
     status = "UNKNOWN"
-    return status, score_distance_result(status), f"[PASS] registered='{registered}'"
+    return True, score_distance_result(status), f"[PASS] registered='{registered}'"
 
 
 print(enhanced_distance_check("python.org", LEGIT_DOMAINS, 2))
@@ -124,3 +126,4 @@ print(enhanced_distance_check("pythonn.org", LEGIT_DOMAINS, 2))
 print(enhanced_distance_check("test.paypal.org", LEGIT_DOMAINS, 2))
 print(enhanced_distance_check("gmail.security.xyz", LEGIT_DOMAINS, 2))
 print(enhanced_distance_check("pythno.reference.com", LEGIT_DOMAINS, 2))
+print(enhanced_distance_check("..mail.gmail.com", LEGIT_DOMAINS, 2))
