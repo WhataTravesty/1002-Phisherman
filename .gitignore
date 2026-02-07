@@ -7,3 +7,5 @@ env
 # Ignore Datasets
 email-dataset-figshare/
 env
+input/
+*.csv
