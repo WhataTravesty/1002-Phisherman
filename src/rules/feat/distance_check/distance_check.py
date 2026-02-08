@@ -121,9 +121,36 @@ def enhanced_distance_check(sender_domain: str, legit_domains: set[str], max_dis
     return True, score_distance_result(status), f"[PASS] registered='{registered}'"
 
 
+
+def get_domain_boolean(sender_domain: str, max_distance: int = 2) -> bool:
+    boolean_result, _score, _msg = enhanced_distance_check(sender_domain, LEGIT_DOMAINS, max_distance)
+    return boolean_result
+
+
+def get_domain_score(sender_domain: str, max_distance: int = 2) -> int:
+    _boolean_result, score, _msg = enhanced_distance_check(sender_domain, LEGIT_DOMAINS, max_distance)
+    return score
+
+
+def get_domain_message(sender_domain: str, max_distance: int = 2) -> str:
+    _boolean_result, _score, msg = enhanced_distance_check(sender_domain, LEGIT_DOMAINS, max_distance)
+    return msg
+
+
+
 print(enhanced_distance_check("python.org", LEGIT_DOMAINS, 2))
 print(enhanced_distance_check("pythonn.org", LEGIT_DOMAINS, 2))
 print(enhanced_distance_check("test.paypal.org", LEGIT_DOMAINS, 2))
 print(enhanced_distance_check("gmail.security.xyz", LEGIT_DOMAINS, 2))
 print(enhanced_distance_check("pythno.reference.com", LEGIT_DOMAINS, 2))
-print(enhanced_distance_check("..mail.gmail.com", LEGIT_DOMAINS, 2))
+
+print(get_domain_boolean("python.org"))
+print(get_domain_score("python.org"))
+print(get_domain_message("python.org"))
+
+print(get_domain_boolean("pythno.reference.com"))
+print(get_domain_score("pythno.reference.com"))
+print(get_domain_message("pythno.reference.com"))
+
+
+
