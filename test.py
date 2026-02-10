@@ -7,9 +7,6 @@ global fieldnames
 
 sender_domain = "user@pythonn.org"
 email = "URGENT: Click here to verify your bank account password"
-
-
-
 def main():
     dictionary = {
         "email":[email],
