@@ -5,9 +5,6 @@ global email
 global fieldnames
 
 email = "URGENT: Click here to verify your bank account password"
-
-
-
 def main():
     dictionary = {
         "email":[email]
