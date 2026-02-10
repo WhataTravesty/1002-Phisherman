@@ -1,2 +1,2 @@
-,email,Keyword Score,Keyword Boolean
-0,URGENT: Click here to verify your bank account password,0.442,True
+,email,sender_domain,Keyword Score,Keyword Boolean,Domain Distance check score,Domain Distance check Boolean,Domain Distance Check comment
+0,URGENT: Click here to verify your bank account password,user@pythonn.org,0.442,True,20,False,[REGISTERED TYPO] 'pythonn.org' ~ 'python.org' (dist=1)
