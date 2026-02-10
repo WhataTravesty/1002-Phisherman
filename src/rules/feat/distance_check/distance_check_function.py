@@ -1,4 +1,4 @@
-from legit_domains_generated import LEGIT_DOMAINS
+from .legit_domains_generated import LEGIT_DOMAINS
 import Levenshtein, tldextract
 
 SCORE_TYPO_DOMAIN = 20
