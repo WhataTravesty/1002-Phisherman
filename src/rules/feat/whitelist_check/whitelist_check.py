@@ -5,9 +5,10 @@ import re
 # from src.rules.feat.generate_legit.legit_domains_generated import LEGIT_DOMAINS
 from ..generate_legit.legit_domains_generated import LEGIT_DOMAINS
 
-
-
-#this class stores the results of the whitelist check and their justifications
+#this class stores:
+# results of the whitelist check
+# their justifications
+# and what their matched partner is
 @dataclass(frozen=True)
 class WhiteListCheckResults:
     status: str #this is either pass or fail
@@ -18,7 +19,7 @@ class WhiteListCheckResults:
 #i.e it standardises them to a format which ensures for consistent analysis 
 #per email
 #(removing whitespaces, converting to lowercases and remove trailing dots)
-
+#regex is used additionally to determine if its follows typical domain name formats
 domain_regex = re.compile(
      r"^(?!-)(?:[a-z0-9-]{1,63}\.)+[a-z]{2,63}$"
 )
@@ -33,9 +34,7 @@ def normalise_domain(domain: Any) -> str:
     d = str(domain).strip().lower()
     return d.rstrip(".")
 
-#this following function will load the whitelist from the white_domain.txt file
-#as a Set, this is to help make comparison faster 
-
+# Load and normalize legitimate domains into a set for fast whitelist lookup
 def load_legit_domains_whitelist() -> Set[str]:
     wl: Set[str] = set()
     for d in LEGIT_DOMAINS:
@@ -46,8 +45,8 @@ def load_legit_domains_whitelist() -> Set[str]:
 
 WHITELIST_SET: Set[str] = load_legit_domains_whitelist()
     
-#this following function compares the whitelist with the normalized domains to
-# see if they match
+# This function Normalizes the sender domain and determine whether it is
+# an exact match or a subdomain of any whitelisted domain
 
 def match_whitelist(
         sender_domain: Any,
@@ -68,8 +67,8 @@ def match_whitelist(
 
         return None
 
-#this following function is the one running the actual evaluation 
-#and returning the results
+# This function Performs a full whitelist validation and matching on a sender domain,
+# returning a detailed result for analysis and scoring
 
 def run_whitelist_check(
         sender_domain: Any,
@@ -105,32 +104,11 @@ def run_whitelist_check(
              reason="Sender domain '{} not found in whitelist.".format(sender),
              matched_domain=None
         )
-
-#return with a False boolean to indicate it failing the check
-#used to show in stats 
-def triggered_whitelistcheck(result: WhiteListCheckResults) -> int:
-     return result.status == "Pass"
-       
-#add risk score of 25 or 0 depending on the result status
-#no need for a range as its just pass or fail
-def whitelist_riskscore(result: WhiteListCheckResults) -> int:
-     if result.status == "Fail":
-          return 25
-     elif result.status =="Pass":
-          return 0
-     else:
-          #unknown status so we assume risk anyways
-          return 25
      
-          
-def triggered_reason(result: WhiteListCheckResults) -> str:
-     if result.status == "Fail":
-          return result.reason
-     if result.matched_domain:
-          return f"Matched whitelsit domain: {result.matched_domain}"
-     return "Whitelist passed"
 
-
+#using the status from the result, this function will return with a boolean value
+#which is either True or False based on Pass or Fail 
+#this will then be called later on for display in the stats board
 def get_whitelist_boolean(sender_domain: str) -> bool:
      status = run_whitelist_check(sender_domain, LEGIT_DOMAINS).status
      if status == "Pass":
@@ -138,12 +116,14 @@ def get_whitelist_boolean(sender_domain: str) -> bool:
      else:
           return False
 
-
+#using the results of the reasons from the result, this function will return the reason for why a domain
+#passed the whitelist check or failed the whitelist check
 def get_whitelist_reason(sender_domain: str) -> str:
     reason = run_whitelist_check(sender_domain, LEGIT_DOMAINS).reason
     return reason
 
-
+#using the status from the results, this funciton will return with a risk score of either 25 or 0
+#dependent on whether the mail was a pass or fail
 def get_whitelist_score(sender_domain: str) -> int:
      status = run_whitelist_check(sender_domain, LEGIT_DOMAINS).status
      if status == "Pass":
