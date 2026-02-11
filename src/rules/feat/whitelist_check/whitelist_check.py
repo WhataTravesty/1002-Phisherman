@@ -2,7 +2,9 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional, Set, Any
 import re
-from src.rules.feat.generate_legit.legit_domains_generated import LEGIT_DOMAINS
+# from src.rules.feat.generate_legit.legit_domains_generated import LEGIT_DOMAINS
+from ..generate_legit.legit_domains_generated import LEGIT_DOMAINS
+
 
 
 #this class stores the results of the whitelist check and their justifications
@@ -68,6 +70,7 @@ def match_whitelist(
 
 #this following function is the one running the actual evaluation 
 #and returning the results
+
 def run_whitelist_check(
         sender_domain: Any,
         whitelist: Set[str]
@@ -103,7 +106,7 @@ def run_whitelist_check(
              matched_domain=None
         )
 
- #return with a False boolean to indicate it failing the check
+#return with a False boolean to indicate it failing the check
 #used to show in stats 
 def triggered_whitelistcheck(result: WhiteListCheckResults) -> int:
      return result.status == "Pass"
@@ -128,3 +131,22 @@ def triggered_reason(result: WhiteListCheckResults) -> str:
      return "Whitelist passed"
 
 
+def get_whitelist_boolean(sender_domain: str) -> bool:
+     status = run_whitelist_check(sender_domain, LEGIT_DOMAINS).status
+     if status == "Pass":
+          return True
+     else:
+          return False
+
+
+def get_whitelist_reason(sender_domain: str) -> str:
+    reason = run_whitelist_check(sender_domain, LEGIT_DOMAINS).reason
+    return reason
+
+
+def get_whitelist_score(sender_domain: str) -> int:
+     status = run_whitelist_check(sender_domain, LEGIT_DOMAINS).status
+     if status == "Pass":
+          return 0
+     else:
+          return 25
