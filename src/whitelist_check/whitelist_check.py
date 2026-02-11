@@ -2,12 +2,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional, Set, Any
 import re
+from src.rules.feat.generate_legit.legit_domains_generated import LEGIT_DOMAINS
 
-#this line is purely for testing, has nothing to do with the actual function
-#this is written entirely for systems review
-WHITELIST_PATH = Path(__file__).resolve().parent / "whitelist_domain.txt"
-def load_default_whitelist() -> Set[str]:
-    return load_whitelist(str(WHITELIST_PATH))
 
 #this class stores the results of the whitelist check and their justifications
 @dataclass(frozen=True)
@@ -38,30 +34,21 @@ def normalise_domain(domain: Any) -> str:
 #this following function will load the whitelist from the white_domain.txt file
 #as a Set, this is to help make comparison faster 
 
-def load_whitelist(file_path: str) -> Set[str]:
-    path = Path(file_path)
+def load_legit_domains_whitelist() -> Set[str]:
+    wl: Set[str] = set()
+    for d in LEGIT_DOMAINS:
+          nd = normalise_domain(d)
+          if nd:
+               wl.add(nd)
+    return wl
 
-    if not path.exists():
-        raise FileNotFoundError("Whitelist file not found: " +str(path))
-    
-    whitelist: Set[str] = set()
-
-    for raw in path.read_text(encoding="utf-8").splitlines():
-        line = raw.strip()
-
-        if not line or line.startswith("#"):
-            continue
-
-        whitelist.add(normalise_domain(line))
-
-    whitelist.discard("")
-    return whitelist
+WHITELIST_SET: Set[str] = load_legit_domains_whitelist()
     
 #this following function compares the whitelist with the normalized domains to
 # see if they match
 
 def match_whitelist(
-        sender_domain: str,
+        sender_domain: Any,
         whitelist: Set[str],     
 ) -> Optional[str]:
         
@@ -133,6 +120,11 @@ def whitelist_riskscore(result: WhiteListCheckResults) -> int:
           return 25
      
           
-
+def triggered_reason(result: WhiteListCheckResults) -> str:
+     if result.status == "Fail":
+          return result.reason
+     if result.matched_domain:
+          return f"Matched whitelsit domain: {result.matched_domain}"
+     return "Whitelist passed"
 
 
