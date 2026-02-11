@@ -110,7 +110,7 @@ def run_whitelist_check(
 #which is either True or False based on Pass or Fail 
 #this will then be called later on for display in the stats board
 def get_whitelist_boolean(sender_domain: str) -> bool:
-     status = run_whitelist_check(sender_domain, LEGIT_DOMAINS).status
+     status = run_whitelist_check(sender_domain, WHITELIST_SET).status
      if status == "Pass":
           return True
      else:
@@ -119,13 +119,13 @@ def get_whitelist_boolean(sender_domain: str) -> bool:
 #using the results of the reasons from the result, this function will return the reason for why a domain
 #passed the whitelist check or failed the whitelist check
 def get_whitelist_reason(sender_domain: str) -> str:
-    reason = run_whitelist_check(sender_domain, LEGIT_DOMAINS).reason
+    reason = run_whitelist_check(sender_domain, WHITELIST_SET).reason
     return reason
 
 #using the status from the results, this funciton will return with a risk score of either 25 or 0
 #dependent on whether the mail was a pass or fail
 def get_whitelist_score(sender_domain: str) -> int:
-     status = run_whitelist_check(sender_domain, LEGIT_DOMAINS).status
+     status = run_whitelist_check(sender_domain, WHITELIST_SET).status
      if status == "Pass":
           return 0
      else:
