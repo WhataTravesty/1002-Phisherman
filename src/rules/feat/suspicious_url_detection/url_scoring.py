@@ -1,5 +1,5 @@
 import pandas as pd
-from suspicious_url_rules import (
+from .suspicious_url_rules import (
     parse_url,
     email_url_http_check,
     email_url_shortening_service_check,

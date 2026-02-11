@@ -1,6 +1,6 @@
 from .legit_domains_generated import LEGIT_DOMAINS
 import Levenshtein, tldextract
-
+import pandas as pd
 SCORE_TYPO_DOMAIN = 20
 SCORE_SUBDOMAIN_IMPERSONATION = 25
 
@@ -153,4 +153,22 @@ print(get_domain_score("pythno.reference.com"))
 print(get_domain_message("pythno.reference.com"))
 
 
+
+def score_urls_in_dataset_with_single_test(
+    csv_path: str,
+):
+    df = pd.read_csv(csv_path)
+    # df[["url_score", "url_boolean"]] = df.apply(extract_score_and_boolean, axis=1)
+
+    df["enhanced_score"] = df["sender_domain"].apply(get_domain_boolean)
+
+    print(df[["enhanced_score"]].head(20))
+    # print(df[["url_score", "url_boolean"]].head(20))S
+    # print(df["url_boolean"].value_counts(dropna=False))
+    # print("Any True?", df["url_boolean"].any()) 
+    # print("Highest URL score:", df["url_score"].max())
+    
+    return df
+
+score_urls_in_dataset_with_single_test(csv_path="dataset/email-dataset-figshare/Cleaned/Assassin_cleaned.csv")
 
