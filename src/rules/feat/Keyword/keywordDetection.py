@@ -21,7 +21,7 @@ def boolean_result(normalized_keyword_score):
 
 def analyze_email(email_body):
     #Convert the email to only lowercase to conduct regex search
-    email_body = email_body.lower()
+    email_body = str(email_body).lower()
     length = len(email_body)
 
     #Store all dictionaries in this list
