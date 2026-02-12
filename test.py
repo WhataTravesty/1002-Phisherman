@@ -14,7 +14,9 @@ def main():
         }
     
     df = pd.DataFrame(dictionary)
+
     df = append_results_to_dataframe(df)
+
     df.to_csv("outputs/keyword_scoring.csv")
     print(test)
 

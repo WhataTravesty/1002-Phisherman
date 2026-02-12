@@ -49,7 +49,7 @@ def analyze_email(email_body):
             #Add to total score
             total_score += score
     
-    normalized_keyword_score = min(total_score / 50, 1.0)
+    normalized_keyword_score = min(total_score, 20)
 
     #Appending the Total Score to the top of the data
     return normalized_keyword_score
