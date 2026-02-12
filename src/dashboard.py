@@ -1,78 +1,110 @@
-import random
+import json
 import pandas as pd
-from sklearn.metrics import confusion_matrix, classification_report
 
 
-def generate_mock_results(n: int = 200) -> pd.DataFrame:
-    
-    #Generate synthetic evaluation results for dashboard development.
-    
-    data = []
+def _safe_int(x, default=0):
+    try:
+        return int(x)
+    except Exception:
+        return default
 
-    for _ in range(n):
-        actual = random.choices(["ham", "phishing"], weights=[0.65, 0.35])[0]
 
-        # Rule triggers 
-        
-        keyword = random.random() < (0.7 if actual == "phishing" else 0.15)
-        url = random.random() < (0.8 if actual == "phishing" else 0.2)
-        edit_distance = random.random() < (0.4 if actual == "phishing" else 0.05)
-        whitelist = random.random() < (0.1 if actual == "phishing" else 0.9)
+def _safe_float(x, default=0.0):
+    try:
+        return float(x)
+    except Exception:
+        return default
 
-        # Placeholder scoring
 
-        risk_score = (
-            keyword * 2 +
-            url * 3 +
-            edit_distance * 2 +
-            (not whitelist) * 2
-        )
+def build_dashboard_data(df: pd.DataFrame) -> dict:
+    out = df.copy()
 
-        predicted = "phishing" if risk_score >= 5 else "ham"
+    # Normalize expected columns if missing
+    for col in ["predicted", "risk_score_pct", "reasons", "reasons_list", "label", "subject_clean", "sender_email", "sender_domain"]:
+        if col not in out.columns:
+            out[col] = ""
 
-        data.append({
-            "actual": actual,
-            "predicted": predicted,
-            "risk_score": int(risk_score),
-            "keyword": int(keyword),
-            "url": int(url),
-            "edit_distance": int(edit_distance),
-            "whitelist": int(whitelist),
+    total = len(out)
+    phishing = int((out["predicted"] == "phishing").sum())
+    ham = int((out["predicted"] != "phishing").sum())
+
+    threshold = _safe_int(out["threshold"].iloc[0], default=0) if "threshold" in out.columns and len(out) else 0
+
+    # Accuracy vs label (your label convention: 0=phishing, 1=safe)
+    accuracy = None
+    if "label" in out.columns:
+        labels = out["label"]
+        # only compute if label has at least some numeric-like values
+        try:
+            lab = pd.to_numeric(labels, errors="coerce")
+            valid = lab.notna()
+            if valid.any():
+                y_true_phish = lab[valid].astype(int).eq(0)
+                y_pred_phish = out.loc[valid, "predicted"].eq("phishing")
+                accuracy = round(float((y_true_phish == y_pred_phish).mean() * 100), 2)
+        except Exception:
+            accuracy = None
+
+    # Rule trigger counts / rates (based on your columns from scoring)
+    rule_map = [
+        ("Keyword Detection", "hit_keyword"),
+        ("Whitelist Failure", "hit_whitelist"),
+        ("Edit Distance", "hit_distance"),
+        ("Suspicious URL", "hit_suspicious_url"),
+    ]
+
+    rule_counts = {}
+    rule_rates = {}
+    for label, col in rule_map:
+        if col in out.columns and total > 0:
+            c = int(pd.to_numeric(out[col], errors="coerce").fillna(0).astype(int).sum())
+            rule_counts[label] = c
+            rule_rates[label] = round((c / total) * 100, 2)
+        else:
+            rule_counts[label] = 0
+            rule_rates[label] = 0.0
+
+    # Top risky emails
+    # Ensure numeric sort
+    out["_risk"] = pd.to_numeric(out["risk_score_pct"], errors="coerce").fillna(0.0)
+
+    top = out.sort_values("_risk", ascending=False).head(15)
+
+    sample_rows = []
+    for _, r in top.iterrows():
+        subject = str(r.get("subject_clean", "") or "")
+        sender_email = str(r.get("sender_email", "") or "")
+        sender_domain = str(r.get("sender_domain", "") or "")
+        from_display = sender_email if sender_email else sender_domain
+
+        # Parse reasons_list JSON
+        raw = r.get("reasons_list", "[]")
+        why_items = []
+        if isinstance(raw, str) and raw.strip():
+            try:
+                parsed = json.loads(raw)
+                if isinstance(parsed, list):
+                    why_items = parsed
+            except Exception:
+                why_items = []
+
+        sample_rows.append({
+            "subject": subject,
+            "from": from_display,
+            "risk_score_pct": round(_safe_float(r.get("risk_score_pct", 0.0)), 2),
+            "pred": str(r.get("predicted", "") or ""),
+            "why": str(r.get("reasons", "") or ""),
+            "why_items": why_items,
         })
 
-    return pd.DataFrame(data)
-
-
-def build_dashboard_data(n: int = 200) -> dict:
-
-    #Compute all statistics required by the dashboard template.
-
-    df = generate_mock_results(n=n)
-
-    total = len(df)
-    ham = int((df["actual"] == "ham").sum())
-    phishing = int((df["actual"] == "phishing").sum())
-    accuracy = float((df["actual"] == df["predicted"]).mean())
-
-    cm = confusion_matrix(df["actual"], df["predicted"], labels=["ham", "phishing"])
-    report = classification_report(df["actual"], df["predicted"], output_dict=True)
-
-    rule_stats = {
-        "Keyword Detection": float(df["keyword"].mean() * 100),
-        "Suspicious URL": float(df["url"].mean() * 100),
-        "Edit Distance": float(df["edit_distance"].mean() * 100),
-        "Whitelist Failure": float((1 - df["whitelist"].mean()) * 100),
-    }
-
     return {
+        "empty": total == 0,
         "total": total,
         "ham": ham,
         "phishing": phishing,
-        "accuracy": round(accuracy * 100, 2),
-        "cm": cm.tolist(),
-        "rule_stats": rule_stats,
-        "report": report,
-        "dataset_name": "Mock",
-        "last_updated": "Just now",
-        "threshold": "N/A",
+        "threshold": threshold,
+        "accuracy": accuracy,
+        "rule_counts": rule_counts,
+        "rule_rates": rule_rates,
+        "sample_rows": sample_rows,
     }
