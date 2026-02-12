@@ -18,7 +18,8 @@ from src.rules.feat.distance_check.distance_check_function import (
 )
 
 # suspicious urls
-from src.rules.feat.suspicious_url_detection.suspicious_url_rules import parse_url, score_single_email
+from src.rules.feat.suspicious_url_detection.suspicious_url_rules import parse_url
+from src.rules.feat.suspicious_url_detection.url_scoring import score_single_email
 
 WEIGHTS = {
     "keyword": 20,
@@ -93,6 +94,7 @@ def score_dataset(df: pd.DataFrame) -> pd.DataFrame:
         # ---------------- SUSPICIOUS URL (score_single_email expects list)
         url_list = parse_url(urls_raw)  # handles "['http://...']"
         url_hit, url_score = score_single_email(url_list, sender_domain)
+        # df[["url_score", "url_boolean"]] = df.apply(extract_score_and_boolean, axis=1)
         su = int(url_score)  # should already be 0..30
         hu = bool(url_hit)
 
