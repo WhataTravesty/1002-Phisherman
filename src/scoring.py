@@ -2,6 +2,7 @@ import pandas as pd
 
 # keyword
 from src.rules.feat.Keyword.keywordDetection import analyze_email as keyword_score
+from src.rules.feat.Keyword.keywordDetection import boolean_result as keyword_boolean
 
 # whitelist
 from src.rules.feat.whitelist_check.whitelist_check import (
@@ -22,8 +23,8 @@ from src.rules.feat.suspicious_url_detection.suspicious_url_rules import parse_u
 from src.rules.feat.suspicious_url_detection.url_scoring import score_single_email
 
 WEIGHTS = {
-    "keyword": 20,
-    "whitelist": 25,
+    "keyword": 25,
+    "whitelist": 20,
     "distance": 25,
     "suspicious_url": 30,
 }
@@ -65,9 +66,9 @@ def score_dataset(df: pd.DataFrame) -> pd.DataFrame:
 
         # ---------------- KEYWORD (teammate scoring returns 0..1 normalized)
         text = (subject + " " + body).strip()
-        ks_norm = float(keyword_score(text) or 0.0)          # 0..1
-        ks = min(max(ks_norm, 0.0), 1.0) * WEIGHTS["keyword"]  # 0..20
-        hk = ks > 0  # hit if contributes anything
+        ks = float(keyword_score(text) or 0.0)          # 0..1
+        #ks = min(max(ks_norm, 0.0), 1.0) * WEIGHTS["keyword"]  # 0..20
+        hk =  keyword_boolean(ks)# hit if contributes anything
 
         # ---------------- WHITELIST (pass -> 0 score, fail -> 25)
         if sender_domain in wl_cache:

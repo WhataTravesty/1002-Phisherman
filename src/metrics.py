@@ -166,5 +166,5 @@ def pretty_print(result: MetricsResult) -> None:
 # r = compute_metrics(df, threshold=20)  # uses risk_score_pct by default
 # pretty_print(r)
 
-# grid = scan_thresholds(df, thresholds=[20, 30, 35, 40, 45, 50])
+# grid = scan_thresholds(df, thresholds=[0,1,20, 30, 35, 40, 45, 50])
 # print(grid.head(10))

@@ -68,7 +68,7 @@ def build_dashboard_data(df: pd.DataFrame) -> dict:
     # Ensure numeric sort
     out["_risk"] = pd.to_numeric(out["risk_score_pct"], errors="coerce").fillna(0.0)
 
-    top = out.sort_values("_risk", ascending=False).head(15)
+    top = out.sort_values("_risk", ascending=False).head(20)
 
     sample_rows = []
     for _, r in top.iterrows():
