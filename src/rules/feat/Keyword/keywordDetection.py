@@ -13,7 +13,7 @@ def position_multiplier(position, text_length):
         return 1.0
     
 def boolean_result(normalized_keyword_score):
-    if normalized_keyword_score > 0.3:
+    if normalized_keyword_score > 10:
         return True
     else:
         return False
@@ -49,7 +49,7 @@ def analyze_email(email_body):
             #Add to total score
             total_score += score
     
-    normalized_keyword_score = min(total_score, 20)
+    normalized_keyword_score = min(total_score * 1.2, 25)
 
     #Appending the Total Score to the top of the data
     return normalized_keyword_score
